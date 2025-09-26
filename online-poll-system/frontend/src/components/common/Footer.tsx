@@ -130,7 +130,7 @@ const Footer: React.FC = () => {
         <div className="footer-bottom">
           <div className="footer-bottom-content">
             <p className="copyright">
-              © {currentYear} PollSupaa. Made with ❤️ for better decision making.
+              © {currentYear} PollSupaa.
             </p>
             <div className="footer-badges">
               <span className="badge">Open Source</span>
