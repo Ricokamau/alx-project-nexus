@@ -99,9 +99,11 @@ const pollSlice = createSlice({
     
     // Update poll in the list
     updatePollInList: (state, action: PayloadAction<Poll>) => {
-      const index = state.polls.findIndex(poll => poll.id === action.payload.id);
-      if (index !== -1) {
-        state.polls[index] = action.payload;
+      if (Array.isArray(state.polls)) {
+        const index = state.polls.findIndex(poll => poll.id === action.payload.id);
+        if (index !== -1) {
+          state.polls[index] = action.payload;
+        }
       }
     },
   },
@@ -114,7 +116,15 @@ const pollSlice = createSlice({
       })
       .addCase(fetchPolls.fulfilled, (state, action) => {
         state.loading = false;
-        state.polls = action.payload;
+        
+        // Handle both paginated and direct array responses
+        let polls: any = action.payload;
+        if (polls && typeof polls === 'object' && 'results' in polls && Array.isArray(polls.results)) {
+          // Paginated response from Django REST framework
+          polls = polls.results;
+        }
+        
+        state.polls = Array.isArray(polls) ? polls : [];
         state.error = null;
       })
       .addCase(fetchPolls.rejected, (state, action) => {
@@ -144,6 +154,10 @@ const pollSlice = createSlice({
       })
       .addCase(createPoll.fulfilled, (state, action) => {
         state.creating = false;
+        // Ensure polls is an array before using unshift
+        if (!Array.isArray(state.polls)) {
+          state.polls = [];
+        }
         state.polls.unshift(action.payload); // Add to beginning of list
         state.error = null;
       })
@@ -163,7 +177,7 @@ const pollSlice = createSlice({
         
         // Update poll in the polls list
         const index = state.polls.findIndex(poll => poll.id === action.payload.id);
-        if (index !== -1) {
+        if (index !== -1 && Array.isArray(state.polls)) {
           state.polls[index] = action.payload;
         }
         
@@ -184,7 +198,7 @@ const pollSlice = createSlice({
         
         // Update poll in the polls list
         const index = state.polls.findIndex(poll => poll.id === action.payload.id);
-        if (index !== -1) {
+        if (index !== -1 && Array.isArray(state.polls)) {
           state.polls[index] = action.payload;
         }
       })

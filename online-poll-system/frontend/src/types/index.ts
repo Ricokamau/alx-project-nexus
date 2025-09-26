@@ -60,6 +60,9 @@ export interface VoteFormProps {
 
 export interface PollResultsProps {
   poll: Poll;
+  showTitle?: boolean;
+  refreshResults?: () => void;
+  isRefreshing?: boolean;
 }
 
 export interface PollFormProps {
@@ -68,8 +71,9 @@ export interface PollFormProps {
 }
 
 // Chart Data Types
-export interface ChartData {
+export interface ChartDataItem {
   name: string;
+  fullName: string;
   votes: number;
   percentage: number;
   fill?: string;
