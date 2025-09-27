@@ -76,10 +76,12 @@ const PollForm: React.FC<PollFormProps> = ({ onSubmit, loading }) => {
     const pollData: PollCreateData = {
       question: formData.question.trim(),
       description: formData.description.trim(),
-      options: validOptions.map(opt => opt.trim()),
+      // ✅ FIXED: Convert string options to objects with 'text' field
+      options: validOptions.map(opt => ({ text: opt.trim() })),
       ...(formData.expires_at && { expires_at: formData.expires_at })
     };
 
+    console.log('Submitting poll data:', pollData); // Debug log
     onSubmit(pollData);
   };
 
@@ -124,7 +126,8 @@ const PollForm: React.FC<PollFormProps> = ({ onSubmit, loading }) => {
   if (loading) {
     return (
       <div className="poll-form-container">
-        <LoadingSpinner size="large" text="Creating your poll..." />
+        <LoadingSpinner size="large" />
+        <p>Creating your poll...</p>
       </div>
     );
   }

@@ -16,11 +16,12 @@ export interface Poll {
   total_votes: number;
 }
 
+// ✅ UPDATED: Changed options from string[] to { text: string }[]
 export interface PollCreateData {
   question: string;
   description: string;
   expires_at?: string;
-  options: string[];
+  options: { text: string }[];  // Changed this line
 }
 
 export interface VoteRequest {
@@ -85,12 +86,12 @@ export interface ApiError {
   details?: string;
 }
 
-// Form Types
+// Form Types - Keep this for internal form handling
 export interface CreatePollForm {
   question: string;
   description: string;
   expires_at: string;
-  options: string[];
+  options: string[];  // Form still uses strings internally
 }
 
 // Utility Types
