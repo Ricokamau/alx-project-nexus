@@ -1,55 +1,51 @@
+# backend/pollsystem/pollsystem/production_settings.py
 import os
-import dj_database_url
-from .settings import *
+from .settings import *  # import base settings
 
-# Production-specific settings
+# SECURITY
 DEBUG = False
+SECRET_KEY = os.environ.get("SECRET_KEY")  # set on Railway
 
-# Security settings
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
+# Hosts (set via env var or default to allow Railway domain temporarily)
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
-# Allowed hosts - Railway will set this
-ALLOWED_HOSTS = ['*']  # Railway handles this securely
+# Database via DATABASE_URL (Railway provides DATABASE_URL for Postgres)
+import dj_database_url
+DATABASES = {
+    "default": dj_database_url.parse(os.environ.get("DATABASE_URL"), conn_max_age=600)
+}
 
-# Database configuration for production
-if 'DATABASE_URL' in os.environ:
-    DATABASES = {
-        'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
-    }
+# Static files (WhiteNoise)
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_URL = "/static/"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
-# Static files configuration
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
-
-# Add whitenoise middleware
+# Add WhiteNoise middleware directly after SecurityMiddleware
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 ] + MIDDLEWARE[1:]
 
-# CORS settings for production
-CORS_ALLOWED_ORIGINS = [
-    "https://your-frontend-domain.vercel.app",  # Will update this later
-]
+# CORS: read comma-separated origins from env var (set on Railway)
+from corsheaders.defaults import default_headers
+CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+# (Alternatively use CORS_ALLOW_ALL_ORIGINS=True temporarily while testing)
 
-# Use environment variables for sensitive data
-SECRET_KEY = os.environ.get('SECRET_KEY', 'your-fallback-secret-key')
+# Security headers (optional but recommended)
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
-# Logging configuration
+# Logging -> stream to console (Railway will capture logs)
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-    },
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["console"], "level": "INFO"},
 }
