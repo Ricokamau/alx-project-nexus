@@ -1,60 +1,91 @@
-from rest_framework import generics, status
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
 from .models import Poll, Option, Vote
-from .serializers import PollSerializer, PollCreateSerializer, VoteSerializer
+from .serializers import PollSerializer, VoteSerializer
 
-class PollListCreateView(generics.ListCreateAPIView):
-    queryset = Poll.objects.filter(is_active=True).order_by('-created_at')
-    
-    def get_serializer_class(self):
-        if self.request.method == 'POST':
-            return PollCreateSerializer
-        return PollSerializer
-
-class PollDetailView(generics.RetrieveAPIView):
+class PollViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing polls - create, read, update, delete polls
+    """
     queryset = Poll.objects.all()
     serializer_class = PollSerializer
-    lookup_field = 'id'
-
-@api_view(['POST'])
-def vote_view(request, poll_id):
-    try:
-        poll = Poll.objects.get(id=poll_id, is_active=True)
-        option_id = request.data.get('option_id')
-        
-        if not option_id:
-            return Response({'error': 'Option ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        option = Option.objects.get(id=option_id, poll=poll)
-        voter_ip = request.META.get('REMOTE_ADDR')
-        
-        # Check if user already voted in this poll
-        existing_vote = Vote.objects.filter(poll=poll, voter_ip=voter_ip).first()
-        
-        if existing_vote:
-            return Response({'error': 'You have already voted in this poll'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Create the vote
-        Vote.objects.create(option=option, poll=poll, voter_ip=voter_ip)
-        
-        # Return updated poll results
-        serializer = PollSerializer(poll)
-        return Response({'message': 'Vote recorded successfully', 'poll': serializer.data})
-        
-    except Poll.DoesNotExist:
-        return Response({'error': 'Poll not found'}, status=status.HTTP_404_NOT_FOUND)
-    except Option.DoesNotExist:
-        return Response({'error': 'Option not found'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-@api_view(['GET'])
-def poll_results(request, poll_id):
-    try:
-        poll = Poll.objects.get(id=poll_id)
+    def get_queryset(self):
+        """Return all polls, ordered by creation date"""
+        return Poll.objects.all().order_by('-created_at')
+    
+    def retrieve(self, request, pk=None):
+        """Get a specific poll with its options and vote counts"""
+        poll = get_object_or_404(Poll, pk=pk)
         serializer = PollSerializer(poll)
         return Response(serializer.data)
-    except Poll.DoesNotExist:
-        return Response({'error': 'Poll not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['post'])
+    def vote(self, request, pk=None):
+        """Submit a vote for a poll option"""
+        poll = get_object_or_404(Poll, pk=pk)
+        
+        # Check if poll has expired
+        if poll.has_expired():
+            return Response(
+                {'error': 'This poll has expired'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = VoteSerializer(data=request.data)
+        if serializer.is_valid():
+            option_id = serializer.validated_data['option_id']
+            
+            # Verify option belongs to this poll
+            try:
+                option = Option.objects.get(id=option_id, poll=poll)
+            except Option.DoesNotExist:
+                return Response(
+                    {'error': 'Invalid option for this poll'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Create the vote
+            Vote.objects.create(
+                poll=poll,
+                option=option,
+                ip_address=request.META.get('REMOTE_ADDR', ''),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+            
+            return Response(
+                {'message': 'Vote submitted successfully'}, 
+                status=status.HTTP_201_CREATED
+            )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['get'])
+    def results(self, request, pk=None):
+        """Get poll results with vote counts and percentages"""
+        poll = get_object_or_404(Poll, pk=pk)
+        
+        options_data = []
+        total_votes = poll.total_votes
+        
+        for option in poll.options.all():
+            vote_count = option.vote_count
+            percentage = (vote_count / total_votes * 100) if total_votes > 0 else 0
+            
+            options_data.append({
+                'option_id': option.id,
+                'option_text': option.text,
+                'vote_count': vote_count,
+                'percentage': round(percentage, 1)
+            })
+        
+        return Response({
+            'poll_id': poll.id,
+            'question': poll.question,
+            'total_votes': total_votes,
+            'results': options_data,
+            'created_at': poll.created_at,
+            'expires_at': poll.expires_at
+        })
