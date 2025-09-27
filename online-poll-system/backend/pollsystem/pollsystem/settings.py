@@ -328,3 +328,9 @@ POLL_SETTINGS = {
     'ALLOW_ANONYMOUS_VOTING': config('ALLOW_ANONYMOUS_VOTING', default=True, cast=bool),
     'RATE_LIMIT_VOTES_PER_IP': config('RATE_LIMIT_VOTES_PER_IP', default=100, cast=int),
 }
+
+import os
+
+# Use production settings if RAILWAY_ENVIRONMENT is set
+if os.environ.get('RAILWAY_ENVIRONMENT'):
+    from .production_settings import *
