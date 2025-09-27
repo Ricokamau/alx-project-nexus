@@ -172,8 +172,12 @@ REST_FRAMEWORK = {
 }
 
 
-# CORS Configuration
+# CORS Configuration - UPDATED FOR PRODUCTION
 CORS_ALLOWED_ORIGINS = [
+    # Production URLs
+    "https://poll-system-frontend.vercel.app",
+    "https://pollsystem-backend.onrender.com",
+    # Development URLs
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:3001",
@@ -183,11 +187,13 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://localhost:\d+$",
     r"^http://127\.0\.0\.1:\d+$",
+    r"^https://.*\.vercel\.app$",  # Allow all Vercel preview deployments
+    r"^https://.*\.onrender\.com$",  # Allow Render deployments
 ]
 
-# Allow all headers and methods for development
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+# CORS Headers and Methods
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 
 CORS_ALLOWED_HEADERS = [
     'accept',
@@ -199,7 +205,24 @@ CORS_ALLOWED_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'cache-control',
+    'pragma',
+    'x-forwarded-for',
+    'x-forwarded-host',
+    'x-forwarded-proto',
 ]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Additional CORS settings for preflight requests
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 
 
 # Swagger/OpenAPI Configuration
