@@ -66,28 +66,27 @@ const PollForm: React.FC<PollFormProps> = ({ onSubmit, loading }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     const validOptions = options.filter(option => option.trim().length > 0);
-    
+
     const pollData: PollCreateData = {
       question: formData.question.trim(),
       description: formData.description.trim(),
-      // ✅ FIXED: Convert string options to objects with 'text' field
+      // ✅ ensure options are always sent as { text: string }
       options: validOptions.map(opt => ({ text: opt.trim() })),
       ...(formData.expires_at && { expires_at: formData.expires_at })
     };
 
-    console.log('Submitting poll data:', pollData); // Debug log
+    console.log('Submitting poll data:', pollData);
     onSubmit(pollData);
   };
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -97,8 +96,7 @@ const PollForm: React.FC<PollFormProps> = ({ onSubmit, loading }) => {
     const newOptions = [...options];
     newOptions[index] = value;
     setOptions(newOptions);
-    
-    // Clear options error when user starts typing
+
     if (errors.options) {
       setErrors(prev => ({ ...prev, options: '' }));
     }
@@ -208,9 +206,9 @@ const PollForm: React.FC<PollFormProps> = ({ onSubmit, loading }) => {
               </div>
             ))}
           </div>
-          
+
           {errors.options && <div className="error-message">{errors.options}</div>}
-          
+
           {options.length < 10 && (
             <button
               type="button"
@@ -220,7 +218,7 @@ const PollForm: React.FC<PollFormProps> = ({ onSubmit, loading }) => {
               + Add Another Option
             </button>
           )}
-          
+
           <div className="options-help">
             {options.filter(opt => opt.trim()).length}/10 options
           </div>
