@@ -1,6 +1,8 @@
 import axios, { AxiosResponse } from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+// ✅ Use Render backend by default, fallback to localhost for dev
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL || 'https://pollsystem-backend.onrender.com/api/';
 
 // Create axios instance with increased timeout for Render cold starts
 const api = axios.create({
@@ -49,20 +51,16 @@ api.interceptors.response.use(
 export const wakeUpBackend = async (): Promise<void> => {
   try {
     console.log('🚀 Waking up backend server...');
-    
-    // Make a simple GET request to the polls endpoint
-    await fetch(`${API_BASE_URL}/polls/`, {
+    await fetch(`${API_BASE_URL}polls/`, {
       method: 'GET',
       mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-    
     console.log('✅ Backend server is awake');
   } catch (error) {
     console.log('⏳ Backend waking up... (this may take 20-30 seconds)');
-    // Don't throw error, as this is just a wake-up call
   }
 };
 
@@ -111,14 +109,17 @@ export const createPoll = (data: PollCreateData): Promise<AxiosResponse<Poll>> =
   return api.post('/polls/', data);
 };
 
-export const vote = (pollId: string, optionId: string): Promise<AxiosResponse<VoteResponse>> => {
+export const vote = (
+  pollId: string,
+  optionId: string
+): Promise<AxiosResponse<VoteResponse>> => {
   return api.post(`/polls/${pollId}/vote/`, { option_id: optionId });
 };
 
 // Helper function to check if backend is responding
 export const checkBackendHealth = async (): Promise<boolean> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/polls/`, {
+    const response = await fetch(`${API_BASE_URL}polls/`, {
       method: 'GET',
       mode: 'cors',
     });
