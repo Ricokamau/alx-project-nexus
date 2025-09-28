@@ -2,7 +2,7 @@
 
 A modern, full-stack real-time polling platform built with React, Redux, TypeScript, and Django REST Framework. Create, share, and participate in polls with live results and interactive visualizations.
 
-[PollSupaa Demo]([https://pages.github.com/](https://poll-system-frontend.vercel.app/))
+[PollSupaa Demo](https://pages.github.com/).
 
 ## Features
 
@@ -329,5 +329,6 @@ For support, please open an issue on GitHub or contact the development team.
 - React community for excellent documentation and tools
 - Recharts for beautiful data visualizations
 - PostgreSQL for reliable data storage
+
 
 
